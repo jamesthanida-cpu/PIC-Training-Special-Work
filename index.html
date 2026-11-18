@@ -51,8 +51,10 @@ h1{font-size:22px;margin:0}
 .c-life{--c:var(--grn)}.c-ok{--c:#4fa3e8}.c-warn{--c:var(--yel)}.c-exp{--c:var(--red)}.c-none{--c:var(--gry)}
 .seg-life{background:var(--grn)}.seg-ok{background:#4fa3e8}.seg-warn{background:var(--yel)}.seg-exp{background:var(--red)}
 .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
-.filters input,.filters select{background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:7px 10px;font:inherit;min-width:0}
-.filters input{flex:1 1 220px}
+.filters input[type=search],.filters select{background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;font:inherit;min-width:0;height:38px}
+.filters input[type=search]:focus,.filters select:focus{outline:2px solid var(--pri);outline-offset:-1px}
+.filters input[type=search]{flex:1 1 100%;padding-left:14px}
+.msb{height:38px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tblw{overflow:auto;max-height:640px;border:1px solid var(--bd);border-radius:10px}
 table{border-collapse:collapse;width:100%;min-width:1180px}
 th,td{padding:7px 9px;border-bottom:1px solid var(--bd);text-align:left;white-space:nowrap}
@@ -80,6 +82,25 @@ td.c,th.c{text-align:center}
 .note{color:var(--mut);font-size:12px;margin-top:10px}
 .chip{display:inline-block;padding:4px 10px;border-radius:999px;background:var(--grnbg);color:var(--grn);font-weight:600;font-size:13px;cursor:pointer;border:1px solid transparent}
 .chip:hover{border-color:var(--grn)}
+.chip small{font-weight:400;opacity:.85}
+.ms{position:relative}
+.btn.act{border-color:var(--pri);color:var(--pri);font-weight:600}
+.msp{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:30;min-width:260px;max-width:min(340px,calc(100vw - 32px));max-height:340px;overflow:auto;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:0 0 6px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.msp.r{left:auto;right:0}
+.ms.open .msp{display:block}
+.msh{position:sticky;top:0;z-index:1;display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:var(--card);border-bottom:1px solid var(--bd);font-size:12px;color:var(--mut)}
+.msh a{color:var(--pri);text-decoration:none;font-weight:600}
+.msp label{display:flex;gap:10px;align-items:center;padding:8px 12px;margin:2px 6px;border-radius:8px;cursor:pointer;text-align:left}
+.msp label:hover{background:var(--grybg)}
+.msp label.on{background:var(--blubg)}
+.msp input{flex:none;width:16px;height:16px;margin:0;padding:0;accent-color:var(--pri);cursor:pointer}
+.msp .t{flex:1;min-width:0;overflow-wrap:anywhere}
+.msp .n{flex:none;font-size:12px;color:var(--mut);background:var(--grybg);border-radius:999px;padding:0 8px}
+.actrow{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.actrow:empty{display:none}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;background:var(--blubg);color:var(--pri);font-size:12.5px;font-weight:600;cursor:pointer}
+.pill:hover{filter:brightness(.95)}
+.bar.sel .lab{color:var(--pri);font-weight:700}
 </style>
 </head>
 <body>
@@ -105,12 +126,14 @@ td.c,th.c{text-align:center}
 <div class="card">
   <div class="filters">
     <input id="q" type="search" placeholder="ค้นหา ชื่อ / รหัสพนักงาน / PIC_BEM / เบอร์โทร">
-    <select id="fTeam"></select><select id="fStr"></select><select id="fPos"></select><select id="fLoc"></select>
-    <select id="fCert"></select><select id="fSt"></select><select id="fFull"></select><select id="fRem"></select>
+    <div class="ms" id="ms-team"></div><div class="ms" id="ms-str"></div><div class="ms" id="ms-pos"></div><div class="ms" id="ms-loc"></div>
+    <div class="ms" id="ms-cert"></div><select id="fMode" title="วิธีรวมสิทธิ์ที่เลือก"><option value="all">สิทธิ์: ต้องมีครบทุกตัวที่เลือก</option><option value="any">สิทธิ์: มีอย่างน้อย 1 ตัว</option></select><div class="ms" id="ms-st"></div><div class="ms" id="ms-full"></div><div class="ms" id="ms-rem"></div>
   </div>
+  <div class="actrow" id="actrow"></div>
+  <div class="note" style="margin:0 0 6px">ทุกตัวกรองเลือกได้หลายค่า · ค่าในตัวกรองเดียวกันนับแบบ “หรือ” (ยกเว้นสิทธิ์ ที่เลือกวิธีรวมได้) · ตัวกรองคนละกลุ่มนับแบบ “และ” · พื้นที่ PIC กับสิทธิ์ Ceiling เป็นคนละตัวกรอง</div>
   <div class="cnt" id="cnt"></div>
   <div class="tblw"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
-  <div class="note">⭐ ครบทุกสิทธิ์ เข้าได้ทุกพื้นที่ = PIC เป็น BLL,BLE หรือ ALL + มี Apostle, High Work, Confined Space, Scaffolding, Hot Work (ไม่หมดอายุ) + Ceiling อย่างน้อย 1 พื้นที่ (IBL/BLL, BLE หรือ PPL) · เกณฑ์เข้มกว่า = มี Ceiling ทั้ง IBL/BLL, BLE และ PPL<br>เกณฑ์แจ้งเตือน: Apostle / Hot Work / Scaffolding(รายปี) หมดอายุ = แดง · เหลือ ≤ 30 วัน = เหลือง · ค่า "Valid" = ใช้ได้ตลอด (ไม่มีวันหมดอายุในไฟล์) · "Invalid" ใน Apostle นับเป็นแดง · “-” = ไม่มีสิทธิ์ · ช่องว่าง = รอตรวจสอบข้อมูล (ไม่นับเป็นมีสิทธิ์และไม่แจ้งเตือน). ค่าในช่องสิทธิ์ที่ระบบอ่านไม่ได้ (เช่น “**”) จะขึ้นเป็น “ตรวจค่า” เพื่อให้ตรวจสอบ</div>
+  <div class="note">⭐ ครบทุกสิทธิ์ เข้าได้ทุกพื้นที่ = PIC เป็น BLL,BLE หรือ ALL + มี Apostle, High Work, Confined Space, Scaffolding, Hot Work (ไม่หมดอายุ) + Ceiling อย่างน้อย 1 พื้นที่ (IBL/BLL, BLE หรือ PPL) · เกณฑ์เข้มกว่า = มี Ceiling ทั้ง IBL/BLL, BLE และ PPL<br>PIC (พื้นที่ที่เข้าได้) แยกจากสิทธิ์ Ceiling — การมี PIC ไม่ถือว่ามีสิทธิ์ Ceiling<br>เกณฑ์แจ้งเตือน: Apostle / Hot Work / Scaffolding(รายปี) หมดอายุ = แดง · เหลือ ≤ 30 วัน = เหลือง · ค่า "Valid" = ใช้ได้ตลอด (ไม่มีวันหมดอายุในไฟล์) · "Invalid" ใน Apostle นับเป็นแดง · “-” = ไม่มีสิทธิ์ · ช่องว่าง = รอตรวจสอบข้อมูล (ไม่นับเป็นมีสิทธิ์และไม่แจ้งเตือน). ค่าในช่องสิทธิ์ที่ระบบอ่านไม่ได้ (เช่น “**”) จะขึ้นเป็น “ตรวจค่า” เพื่อให้ตรวจสอบ</div>
 </div>
 </div>
 
@@ -169,45 +192,77 @@ function badge(c,r){
   return `<span class="bd ${x.s}" title="${tip}">${t}</span>`;
 }
 const uniq=(k)=>[...new Set(DATA.map(r=>r[k]).filter(Boolean))].sort();
-const F={q:'',team:'',str:'',pos:'',loc:'',cert:'',st:'',kpi:'',full:'',rem:''};
-function fillSel(id,first,vals){document.getElementById(id).innerHTML=`<option value="">${first}</option>`+vals.map(v=>`<option value="${v}">${v}</option>`).join('')}
-function initSels(){document.getElementById('fRem').innerHTML='<option value="">Remark: ทั้งหมด</option><option value="__none">ไม่มี Remark</option>'+uniq('remark').map(v=>`<option value="${v}">${v}</option>`).join('');fillSel('fTeam','ทุกทีม',uniq('team'));fillSel('fStr','ทุกโครงสร้าง',uniq('str'));fillSel('fPos','ทุกตำแหน่ง',uniq('pos'))}
+const esc=t=>String(t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+const F={};
+function resetF(){Object.assign(F,{q:'',team:[],str:[],pos:[],loc:[],rem:[],cert:[],st:[],full:[],mode:'all',kpi:''})}
+resetF();
+const MSDEF={
+ team:{label:'ทีม',opts:()=>uniq('team').map(v=>({v,l:v}))},
+ str:{label:'โครงสร้าง',opts:()=>uniq('str').map(v=>({v,l:v}))},
+ pos:{label:'ตำแหน่ง',opts:()=>uniq('pos').map(v=>({v,l:v}))},
+ loc:{label:'พื้นที่ PIC',opts:()=>[{v:'BLL,BLE',l:'BLL, BLE'},{v:'BLE',l:'BLE เท่านั้น'},{v:'ALL',l:'ALL (ทุกพื้นที่)'},{v:'-',l:'ไม่มี PIC (-)'},{v:'none',l:'PIC รอตรวจสอบ (ว่าง)'}]},
+ cert:{label:'สิทธิ์',opts:()=>CERTS.map(c=>({v:c.k,l:c.l}))},
+ st:{label:'สถานะสิทธิ์',opts:()=>[{v:'life',l:'Valid / ตลอดชีพ'},{v:'ok',l:'ใช้ได้ (>1 เดือน)'},{v:'warn',l:'ใกล้หมด (เหลือง)'},{v:'exp',l:'หมดอายุ / Invalid (แดง)'},{v:'none',l:'ไม่มีสิทธิ์ (-)'},{v:'pend',l:'รอตรวจสอบ (ว่าง)'}]},
+ full:{label:'ความครบถ้วน',opts:()=>[{v:'full',l:'⭐ ครบทุกสิทธิ์ + เข้าได้ BLL,BLE/ALL'},{v:'strict',l:'ครบ Ceiling ทั้ง IBL/BLL, BLE และ PPL'},{v:'corenopic',l:'สิทธิ์ครบ แต่ PIC ยังไม่ครบ'}]},
+ rem:{label:'Remark',opts:()=>[{v:'__none',l:'ไม่มี Remark'},...uniq('remark').map(v=>({v,l:v}))]}
+};
+function initSels(){
+  const CNT={team:r=>r.team,str:r=>r.str,pos:r=>r.pos,rem:r=>r.remark||'__none',loc:r=>r.loc||'none'};
+  Object.keys(MSDEF).forEach(k=>{
+    const d=MSDEF[k],el=document.getElementById('ms-'+k);
+    d.o=d.opts();
+    if(CNT[k]){const c={};DATA.forEach(r=>{const v=CNT[k](r);c[v]=(c[v]||0)+1});d.o.forEach(o=>o.n=c[o.v]||0)}
+    el.innerHTML='<button type="button" class="btn msb"></button><div class="msp"><div class="msh"><span>เลือกได้หลายค่า</span><a href="#" data-clr="1">ล้าง</a></div>'+d.o.map(o=>`<label><input type="checkbox" value="${esc(o.v)}"><span class="t">${esc(o.l)}</span>${o.n!=null?`<span class="n">${o.n}</span>`:''}</label>`).join('')+'</div>';
+    el.querySelector('.msb').onclick=ev=>{ev.stopPropagation();const open=el.classList.contains('open');document.querySelectorAll('.ms.open').forEach(x=>x.classList.remove('open'));if(!open){el.classList.add('open');const p=el.querySelector('.msp');p.classList.remove('r');if(p.getBoundingClientRect().right>window.innerWidth-8)p.classList.add('r')}};
+    el.querySelector('.msp').onclick=ev=>ev.stopPropagation();
+    el.querySelectorAll('input').forEach(cb=>cb.onchange=()=>{const a=F[k],i=a.indexOf(cb.value);if(cb.checked&&i<0)a.push(cb.value);if(!cb.checked&&i>=0)a.splice(i,1);F.kpi='';render()});
+    el.querySelector('[data-clr]').onclick=ev=>{ev.preventDefault();F[k]=[];F.kpi='';render()};
+  });
+}
+document.addEventListener('click',()=>document.querySelectorAll('.ms.open').forEach(x=>x.classList.remove('open')));
 initSels();
-document.getElementById('fLoc').innerHTML='<option value="">ทุกพื้นที่ PIC</option><option value="BLL,BLE">BLL, BLE</option><option value="BLE">BLE เท่านั้น</option><option value="ALL">ALL (ทุกพื้นที่)</option><option value="-">ไม่มี PIC (-)</option><option value="none">PIC รอตรวจสอบ</option>';
-document.getElementById('fCert').innerHTML='<option value="">สิทธิ์: ทั้งหมด</option>'+CERTS.map(c=>`<option value="${c.k}">${c.l}</option>`).join('');
-document.getElementById('fSt').innerHTML='<option value="">สถานะ: ทั้งหมด</option><option value="has">มีสิทธิ์</option><option value="life">Valid / ตลอดชีพ</option><option value="ok">ใช้ได้ (&gt;1 เดือน)</option><option value="warn">ใกล้หมด (เหลือง)</option><option value="exp">หมดอายุ (แดง)</option><option value="none">ไม่มีสิทธิ์</option><option value="pend">รอตรวจสอบข้อมูล</option>';
-document.getElementById('fFull').innerHTML='<option value="">ความครบถ้วน: ทั้งหมด</option><option value="full">⭐ ครบทุกสิทธิ์ + เข้าได้ BLL,BLE</option><option value="strict">ครบ Ceiling ทั้ง IBL/BLL, BLE และ PPL</option><option value="corenopic">สิทธิ์ครบ แต่ PIC ยังไม่ครบ</option>';
-const bind=(id,k)=>document.getElementById(id).addEventListener('input',e=>{F[k]=e.target.value;if(k!=='q')F.kpi='';render()});
-bind('q','q');bind('fTeam','team');bind('fStr','str');bind('fPos','pos');bind('fLoc','loc');bind('fCert','cert');bind('fSt','st');bind('fFull','full');bind('fRem','rem');
-function setSel(){['fTeam:team','fStr:str','fPos:pos','fLoc:loc','fCert:cert','fSt:st','fFull:full','fRem:rem'].forEach(p=>{const[a,b]=p.split(':');document.getElementById(a).value=F[b]})}
+document.getElementById('q').addEventListener('input',e=>{F.q=e.target.value;render()});
+document.getElementById('fMode').addEventListener('input',e=>{F.mode=e.target.value;render()});
+function setSel(){
+  Object.keys(MSDEF).forEach(k=>{
+    const el=document.getElementById('ms-'+k),d=MSDEF[k],sel=F[k];
+    el.querySelectorAll('input').forEach(cb=>{cb.checked=sel.includes(cb.value);if(cb.closest)cb.closest('label').classList.toggle('on',cb.checked)});
+    const labs=d.o.filter(o=>sel.includes(o.v)).map(o=>o.l);
+    const b=el.querySelector('.msb');
+    b.textContent=d.label+(!sel.length?'':': '+(labs.length===1?labs[0]:labs.length+' รายการ'))+' ▾';
+    b.classList.toggle('act',sel.length>0);
+  });
+  document.getElementById('fMode').value=F.mode;
+  const ar=document.getElementById('actrow'),pills=[];
+  Object.keys(MSDEF).forEach(k=>MSDEF[k].o.filter(o=>F[k].includes(o.v)).forEach(o=>pills.push(`<span class="pill" data-k="${k}" data-v="${esc(o.v)}" title="คลิกเพื่อเอาออก">${MSDEF[k].label}: ${esc(o.l)} ✕</span>`)));
+  if(F.q)pills.push(`<span class="pill" data-k="q" title="คลิกเพื่อเอาออก">ค้นหา: ${esc(F.q)} ✕</span>`);
+  ar.innerHTML=pills.join('');
+  ar.querySelectorAll('.pill').forEach(p=>p.onclick=()=>{if(p.dataset.k==='q'){F.q='';document.getElementById('q').value=''}else{const a=F[p.dataset.k],i=a.indexOf(p.dataset.v);if(i>=0)a.splice(i,1)}F.kpi='';render()});
+}
 
-function match(r,ign){
+function match(r){
   if(F.q){const s=(r.name+r.id+r.bem+r.tel+r.remark).toLowerCase();if(!s.includes(F.q.toLowerCase()))return false}
-  if(F.team&&r.team!==F.team&&ign!=='team')return false;
-  if(F.str&&r.str!==F.str)return false;
-  if(F.pos&&r.pos!==F.pos)return false;
-  if(F.loc){const l=r.loc||'none';if(l!==F.loc)return false}
-  if(F.cert||F.st){
-    const ks=F.cert?[F.cert]:CERTS.map(c=>c.k);
-    const ok=ks.some(k=>{const s=r.st[k].s;
-      if(!F.st)return s!=='none'&&s!=='pend';
-      if(F.st==='has')return s!=='none'&&s!=='pend';
-      return s===F.st});
-    if(F.cert&&!F.st){ if(['none','pend'].includes(r.st[F.cert].s))return false }
-    else if(!ok)return false;
+  if(F.team.length&&!F.team.includes(r.team))return false;
+  if(F.str.length&&!F.str.includes(r.str))return false;
+  if(F.pos.length&&!F.pos.includes(r.pos))return false;
+  if(F.loc.length&&!F.loc.includes(r.loc||'none'))return false;
+  if(F.rem.length&&!F.rem.includes(r.remark||'__none'))return false;
+  if(F.cert.length||F.st.length){
+    const ks=F.cert.length?F.cert:CERTS.map(c=>c.k);
+    const test=k=>{const s=r.st[k].s;return F.st.length?F.st.includes(s):(s!=='none'&&s!=='pend')};
+    const ok=(F.cert.length&&F.mode==='all')?ks.every(test):ks.some(test);
+    if(!ok)return false;
   }
-  if(F.rem){const v=r.remark||'__none';if(v!==F.rem)return false}
+  if(F.full.length&&!F.full.some(f=>f==='full'?r.full:f==='strict'?r.strict:(r.core&&!r.pic)))return false;
   if(F.kpi==='alert'&&!(r.worst==='exp'||r.worst==='warn'))return false;
   if(F.kpi==='exp'&&r.worst!=='exp')return false;
   if(F.kpi==='warn'&&r.worst!=='warn')return false;
   if(F.kpi==='clean'&&r.worst!=='ok')return false;
   if(F.kpi==='pend'&&!r.pend)return false;
   if(F.kpi==='full'&&!r.full)return false;
-  if(F.full==='full'&&!r.full)return false;
-  if(F.full==='strict'&&!r.strict)return false;
-  if(F.full==='corenopic'&&!(r.core&&!r.pic))return false;
   return true;
 }
+const ceilTags=r=>[['cibl','IBL/BLL'],['cble','BLE'],['cppl','PPL']].filter(x=>['life','ok','warn'].includes(r.st[x[0]].s)).map(x=>x[1]).join(', ')||'–';
 const rShort=t=>{const m=t.match(/เพิ่มใหม่.*\((.*)\)/);return m?'🆕 '+m[1]:t};
 let sortK='no',sortD=1;
 const COLS=[['no','#'],['id','Employee ID'],['name','ชื่อ-สกุล'],['pos','ตำแหน่ง'],['team','ทีม'],['str','Str.'],['loc','PIC'],...CERTS.map(c=>[c.k,c.s||c.l,1])];
@@ -230,7 +285,7 @@ function render(){
   const n=(f)=>base.filter(f).length;
   const K=[['all','พนักงานทั้งหมด',base.length,''],['alert','มีแจ้งเตือน (แดง+เหลือง)',n(r=>r.worst==='exp'||r.worst==='warn'),'r'],['exp','มีสิทธิ์หมดอายุ (แดง)',n(r=>r.worst==='exp'),'r'],['warn','ใกล้หมดใน 1 เดือน (เหลือง)',n(r=>r.worst==='warn'),'y'],['clean','ไม่มีแจ้งเตือน',n(r=>r.worst==='ok'),'g'],['pic','มี PIC เข้าพื้นที่ (BLL/BLE/ALL)',n(r=>r.loc&&r.loc!=='-'),''],['pend','รอตรวจสอบข้อมูล (ช่องว่าง)',n(r=>r.pend),''],['full','⭐ ครบทุกสิทธิ์ เข้าได้ทุกพื้นที่',n(r=>r.full),'g']];
   document.getElementById('kpis').innerHTML=K.map(k=>`<button class="kpi ${k[3]}" data-k="${k[0]}"><div class="n">${k[2]}</div><div class="l">${k[1]}</div></button>`).join('');
-  document.querySelectorAll('.kpi').forEach(e=>{e.onclick=()=>{const k=e.dataset.k;if(k==='all'){F.kpi=''}else if(k==='pic'){F.loc=F.loc?'':'BLL,BLE';F.kpi=''}else F.kpi=F.kpi===k?'':k;render()};e.classList.toggle('on',e.dataset.k===F.kpi)});
+  document.querySelectorAll('.kpi').forEach(e=>{e.onclick=()=>{const k=e.dataset.k;if(k==='all'){F.kpi=''}else if(k==='pic'){F.loc=F.loc.length?[]:['BLL,BLE','BLE','ALL'];F.kpi=''}else F.kpi=F.kpi===k?'':k;render()};e.classList.toggle('on',e.dataset.k===F.kpi)});
   // alerts
   const al=[];base.forEach(r=>CERTS.forEach(c=>{const x=r.st[c.k];if(x.s==='exp'||x.s==='warn')al.push({r,c,x})}));
   al.sort((a,b)=>(a.x.days??-1e6)-(b.x.days??-1e6));
@@ -239,23 +294,23 @@ function render(){
   document.querySelectorAll('.al').forEach(e=>e.onclick=()=>openDrawer(+e.dataset.id));
   // full-access summary
   const fl=base.filter(r=>r.full),nStrict=base.filter(r=>r.strict).length,nNear=base.filter(r=>r.core&&!r.pic).length;
-  document.getElementById('fullbox').innerHTML=`<div class="sub" style="margin-bottom:8px">ครบทุกสิทธิ์ + PIC เข้า BLL,BLE: <b>${fl.length}</b> คน · ครบ Ceiling ทั้ง IBL/BLL, BLE และ PPL: <b>${nStrict}</b> คน · สิทธิ์ครบแต่ PIC ยังไม่ครบ/รอตรวจสอบ: <b>${nNear}</b> คน <button class="btn" id="nearBtn" style="padding:2px 8px;margin-left:6px">ดูกลุ่มนี้</button> <button class="btn" id="fullBtn" style="padding:2px 8px">กรองเฉพาะกลุ่มครบ</button></div><div style="display:flex;flex-wrap:wrap;gap:6px">${fl.map(r=>`<span class="chip" data-id="${r.no}">${r.name}</span>`).join('')||'<span style="color:var(--mut)">ไม่มีพนักงานที่ตรงเงื่อนไข</span>'}</div>`;
+  document.getElementById('fullbox').innerHTML=`<div class="note" style="margin:0 0 8px">PIC = พื้นที่ที่เข้าทำงานได้ ไม่ได้แปลว่ามีสิทธิ์ Ceiling ของพื้นที่นั้น — ดูแท็ก Ceiling ข้างชื่อแต่ละคน</div><div class="sub" style="margin-bottom:8px">ครบทุกสิทธิ์ + PIC เข้า BLL,BLE: <b>${fl.length}</b> คน · ครบ Ceiling ทั้ง IBL/BLL, BLE และ PPL: <b>${nStrict}</b> คน · สิทธิ์ครบแต่ PIC ยังไม่ครบ/รอตรวจสอบ: <b>${nNear}</b> คน <button class="btn" id="nearBtn" style="padding:2px 8px;margin-left:6px">ดูกลุ่มนี้</button> <button class="btn" id="fullBtn" style="padding:2px 8px">กรองเฉพาะกลุ่มครบ</button></div><div style="display:flex;flex-wrap:wrap;gap:6px">${fl.map(r=>`<span class="chip" data-id="${r.no}">${r.name} <small>· PIC ${r.loc} · Ceiling ${ceilTags(r)}</small></span>`).join('')||'<span style="color:var(--mut)">ไม่มีพนักงานที่ตรงเงื่อนไข</span>'}</div>`;
   document.querySelectorAll('#fullbox .chip').forEach(e=>e.onclick=()=>openDrawer(+e.dataset.id));
-  document.getElementById('nearBtn').onclick=()=>{F.full='corenopic';F.kpi='';render()};
-  document.getElementById('fullBtn').onclick=()=>{F.full='full';F.kpi='';render()};
+  document.getElementById('nearBtn').onclick=()=>{F.full=['corenopic'];F.kpi='';render()};
+  document.getElementById('fullBtn').onclick=()=>{F.full=['full'];F.kpi='';render()};
   // cert bars
   document.getElementById('certbars').innerHTML=CERTS.map(c=>{
     const cnt={life:0,ok:0,warn:0,exp:0,none:0,pend:0};base.forEach(r=>cnt[r.st[c.k].s]++);
     const tot=base.length||1;
     const seg=['life','ok','warn','exp','pend'].map(s=>cnt[s]?`<i class="seg-${s}" style="width:${cnt[s]/tot*100}%" title="${LAB[s]} ${cnt[s]}"></i>`:'').join('');
-    return `<div class="bar" data-c="${c.k}"><span class="lab">${c.l}</span><span class="trk">${seg}</span><span class="v">${tot-cnt.none-cnt.pend}</span></div>`}).join('');
-  document.querySelectorAll('#certbars .bar').forEach(e=>e.onclick=()=>{F.cert=F.cert===e.dataset.c?'':e.dataset.c;F.st=F.cert?'has':'';F.kpi='';render()});
+    return `<div class="bar${F.cert.includes(c.k)?' sel':''}" data-c="${c.k}"><span class="lab">${c.l}</span><span class="trk">${seg}</span><span class="v">${tot-cnt.none-cnt.pend}</span></div>`}).join('');
+  document.querySelectorAll('#certbars .bar').forEach(e=>e.onclick=()=>{const a=F.cert,i=a.indexOf(e.dataset.c);i<0?a.push(e.dataset.c):a.splice(i,1);F.kpi='';render()});
   // team bars
   const grp=(k)=>{const m={};base.forEach(r=>{(m[r[k]]=m[r[k]]||{n:0,a:0});m[r[k]].n++;if(r.worst!=='ok')m[r[k]].a++});return m};
   const mx=Math.max(...Object.values(grp('team')).map(x=>x.n),...Object.values(grp('str')).map(x=>x.n),1);
-  const draw=(k,fk)=>Object.entries(grp(k)).sort().map(([n,v])=>`<div class="bar" data-f="${fk}" data-v="${n}"><span class="lab">${n}</span><span class="trk"><i style="width:${(v.n-v.a)/mx*100}%;background:var(--pri)"></i><i class="seg-exp" style="width:${v.a/mx*100}%;opacity:.85"></i></span><span class="v">${v.n}</span></div>`).join('');
+  const draw=(k,fk)=>Object.entries(grp(k)).sort().map(([n,v])=>`<div class="bar${F[fk].includes(n)?' sel':''}" data-f="${fk}" data-v="${esc(n)}"><span class="lab">${n}</span><span class="trk"><i style="width:${(v.n-v.a)/mx*100}%;background:var(--pri)"></i><i class="seg-exp" style="width:${v.a/mx*100}%;opacity:.85"></i></span><span class="v">${v.n}</span></div>`).join('');
   document.getElementById('teambars').innerHTML='<div class="sub">ทีมระบบ</div>'+draw('team','team')+'<div class="sub" style="margin-top:10px">โครงสร้าง</div>'+draw('str','str')+'<div class="legend"><span style="--c:var(--pri)">ปกติ</span><span class="c-exp">มีแจ้งเตือน</span></div>';
-  document.querySelectorAll('#teambars .bar').forEach(e=>e.onclick=()=>{const f=e.dataset.f;F[f]=F[f]===e.dataset.v?'':e.dataset.v;render()});
+  document.querySelectorAll('#teambars .bar').forEach(e=>e.onclick=()=>{const a=F[e.dataset.f],i=a.indexOf(e.dataset.v);i<0?a.push(e.dataset.v):a.splice(i,1);F.kpi='';render()});
 }
 function openDrawer(no){
   const r=DATA.find(x=>x.no===no);
@@ -266,7 +321,7 @@ function openDrawer(no){
   document.getElementById('cl').onclick=()=>document.getElementById('ovl').classList.remove('show');
 }
 document.getElementById('ovl').onclick=e=>{if(e.target.id==='ovl')e.target.classList.remove('show')};
-document.getElementById('reset').onclick=()=>{Object.keys(F).forEach(k=>F[k]='');document.getElementById('q').value='';sortK='no';sortD=1;render()};
+document.getElementById('reset').onclick=()=>{resetF();document.getElementById('q').value='';sortK='no';sortD=1;render()};
 document.getElementById('theme').onclick=()=>{const d=document.documentElement;const dark=getComputedStyle(d).colorScheme==='dark';d.setAttribute('data-theme',dark?'light':'dark')};
 const HEAD={no:'No.',id:'Employee_ID',name:'Employee_Name',pos:'Positions',bem:'PIC_BEM',loc:'PIC_Location',tel:'Phone_Number',str:'Structer',team:'Team_System',apostle:'Apostle_BLL',high:'High_Work',cibl:'Celling_Work(IBL)',cble:'Celling_Work(BLE)',cppl:'Celling_Work(PPL)',conf:'Confined_Space',scaf:'Scaffolding',hot:'Hot_Work',remark:'Remark'};
 function cv(x){
@@ -276,7 +331,7 @@ function cv(x){
 }
 function loadData(rows,label){
   DATA=rows;DATA.forEach(prep);
-  Object.keys(F).forEach(k=>F[k]='');document.getElementById('q').value='';
+  resetF();document.getElementById('q').value='';
   initSels();
   const sb=document.getElementById('srcbar');
   if(label){sb.style.display='block';sb.textContent='📂 กำลังแสดงข้อมูลจากไฟล์: '+label+' ('+rows.length+' คน) — อยู่ในเบราว์เซอร์นี้เท่านั้น รีเฟรชหน้าเว็บจะกลับไปใช้ข้อมูลเดิม'}else sb.style.display='none';
